@@ -1,146 +1,21 @@
 version: "3.8"
 
 networks:
-  easybrainbet_net:
+  sample_net:
 
 services:
-
-  elasticsearch:
-    container_name: es-container
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.3
-    environment:
-      - xpack.security.enabled=false
-      - "discovery.type=single-node"
-    networks:
-      - easybrainbet_net
-    ports:
-      - 9200:9200
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.00'
-
-  kibana:
-    container_name: kb-container
-    image: docker.elastic.co/kibana/kibana:8.4.3
-    environment:
-      - ELASTICSEARCH_HOSTS=http://es-container:9200
-    networks:
-      - easybrainbet_net
-    depends_on:
-      - elasticsearch
-    ports:
-      - 5601:5601
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.00'
-
-  minio:
-    container_name: minio
-    image: minio/minio:latest
-    command: server /data  --console-address ":9090"
-    ports:
-      - 9000:9000
-      - 9090:9090
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    volumes:
-      - minio_data:/data
-    networks:
-      - easybrainbet_net
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.00'
-
-  fusion-auth:
-    container_name: fusion-auth
-    image: fusionauth/fusionauth-app:latest
-    ports:
-      - 9011:9011
-    environment:
-      DATABASE_URL: jdbc:postgresql://db-postgres:5433/fusionauth
-      DATABASE_ROOT_USERNAME: ${FUSION_POSTGRES_USER}
-      DATABASE_ROOT_PASSWORD: ${FUSION_POSTGRES_PASSWORD}
-      DATABASE_USERNAME: ${FUSIONAUTH_DB_USER}
-      DATABASE_PASSWORD: ${FUSIONAUTH_DB_PASSWORD}
-      FUSIONAUTH_APP_RUNTIME_MODE: development
-      FUSIONAUTH_APP_URL: http://fusionauth:9011
-      SEARCH_SERVERS: http://es-container:9200
-      SEARCH_TYPE: elasticsearch
-    networks:
-      - easybrainbet_net
-    depends_on:
-      - elasticsearch
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.00'
-
-  db-postgres-fusionauth:
-    image: postgres:12.9
-    container_name: db-postgres-fusionauth
-    ports:
-      - '5433:5433'
-    environment:
-      POSTGRES_DB: fusionauth
-      PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_USER: ${FUSION_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${FUSION_POSTGRES_PASSWORD}
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - easybrainbet_net
-    restart: unless-stopped
-    volumes:
-      - db_postgres_fusionauth_data:/var/lib/postgresql/data
-
-  db-easybrainbet-postgres:
-    image: postgres:15.1
-    container_name: db-easybrainbet-postgres
-    ports:
-      - '5432:5432'
-    environment:
-      POSTGRES_DB: easybrainbet
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    networks:
-      - easybrainbet_net
-    restart: unless-stopped
-    volumes:
-      - db_easybrainbet_postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-
   rabbitmq:
     image: rabbitmq:3.11.8-management
-    container_name: rabbitmq
+    container_name: rabbitmq-sample
     ports:
       - '5672:5672'
       - '15672:15672'
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: rabbitmq
     networks:
-      - easybrainbet_net
+      - sample_net
     restart: unless-stopped
-
-volumes:
-  minio_data:
-    driver: local
-  db_postgres_fusionauth_data:
-    driver: local
-  db_easybrainbet_postgres_data:
-    driver: local
-
 
 
 
